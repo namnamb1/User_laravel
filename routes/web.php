@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-// use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,18 +14,4 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-}); 
-
-Route::get('/users', [App\Http\Controllers\UserController::class, 'index']);
-
-Route::get('/users/create', [App\Http\Controllers\UserController::class, 'create']);
-Route::post('/users/create', [App\Http\Controllers\UserController::class, 'store']);
-
-Route::get('/users/edit/{id}', [App\Http\Controllers\UserController::class, 'edit']);
-Route::post('/users/edit/{id}', [App\Http\Controllers\UserController::class, 'update']);
-Route::get('/users/delete/{id}', [App\Http\Controllers\UserController::class, 'destroy']);
-
-Route::get('/users/show/{id}', [App\Http\Controllers\UserController::class, 'show']);
-Route::get('/users/search', [App\Http\Controllers\UserController::class, 'search']);
+Route::resource('users', UserController::class);
