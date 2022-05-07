@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Http\Requests\formUserRequest;
 
 class UserController extends Controller
 {
@@ -12,10 +13,19 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::Paginate(5);
-        return view('user.index',compact('users'));
+        $user = new User();
+        $users = $user->Paginate($user::PAGINATE_SIZE);
+
+        $keyWord = $request->input('keyword');
+        $users = User::where('name', 'like', "%$keyWord%")
+            ->orWhere('email', 'like', "%$keyWord%")
+            ->orWhere('id', 'like', "%$keyWord%")
+            ->orderBy('id', 'desc')
+            ->paginate($user::PAGINATE_SIZE);
+
+        return view('user.index',compact('users','keyWord'));
     }
 
     /**
@@ -34,11 +44,19 @@ class UserController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(formUserRequest $request)
     {
-        $data = $request->all();
-        User::create($data);  
-        return redirect()->back();
+        $users = new User();
+        
+        $users->fill($request->all());
+        if($request->hasFile('avatar')) {
+            $newFileName = uniqid() . '-' . $request->avatar->getClientOriginalName();
+            $imagePath = $request->avatar->storeAs('public/uploads/users', $newFileName);
+            $users->avatar = str_replace('public/', '', $imagePath);
+        }
+        $users->save();
+
+        return redirect('/users')->with(['message' => 'Add Success']);
     }
 
     /**
@@ -50,6 +68,7 @@ class UserController extends Controller
     public function show($id)
     {
         $user = User::find($id);
+        
         return view('user.detail',compact('user'));
     }
 
@@ -61,7 +80,8 @@ class UserController extends Controller
      */
     public function edit($id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
+        
         return view('user.edit',compact('user'));
     }
 
@@ -74,10 +94,17 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
+
         $user->fill($request->all());
+        if($request->hasFile('avatar')) {
+            $newFileName = uniqid() . '-' . $request->avatar->getClientOriginalName();
+            $imagePath = $request->avatar->storeAs('public/uploads/users', $newFileName);
+            $user->avatar = str_replace('public/', '', $imagePath);
+        }
         $user->save();
-        return view('user.index');
+
+        return redirect('/users')->with(['message' => 'Update Success']);;
     }
 
     /**
@@ -88,20 +115,9 @@ class UserController extends Controller
      */
     public function destroy($id)
     {   
-        $user = User::find($id);
-        $user->delete();
-        echo "Xóa thành công";
-        return redirect()->back();
+        User::findOrFail($id)->delete();
+
+        return redirect()->back()->with(['message' => 'Delete Success']);
     }
 
-    public function search(Request $request)
-    {
-        $query = $request->input('query');
-        $list = User::where('name', 'like', "%$query%")
-            ->orWhere('email', 'like', "%$query%")
-            ->orWhere('id', 'like', "%$query%")
-            ->orderBy('id', 'desc')
-            ->paginate(10);
-        return view('user.search', compact('list'));
-    }
 }
